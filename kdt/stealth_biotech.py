@@ -85,5 +85,39 @@ for keyword in keywords:
             driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
             time.sleep(wait_time)
         except:
-            breakpoint()
-    
+            # Scroll to bottom
+            html = driver.find_element_by_tag_name('html')
+            html.send_keys(Keys.END)
+            time.sleep(wait_time) 
+
+            try:
+                # Scroll to bottom
+                html = driver.find_element_by_tag_name('html')
+                html.send_keys(Keys.END)
+                time.sleep(wait_time) 
+
+                # Find next page button then click it (ember length = 3)
+                str_index = re.search('aria-label="Next" id="ember', driver.page_source).end()
+                ember = int(driver.page_source[str_index:str_index+3])
+                driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
+                time.sleep(wait_time)
+                continue
+            except:
+                try:
+                    # Scroll to bottom
+                    html = driver.find_element_by_tag_name('html')
+                    html.send_keys(Keys.END)
+                    time.sleep(wait_time) 
+
+                    # Find next page button then click it (ember length = 4)
+                    ember = int(driver.page_source[str_index:str_index+4])
+                    driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
+                    time.sleep(wait_time)
+                    continue
+                except:
+                    # Scroll to bottom
+                    html = driver.find_element_by_tag_name('html')
+                    html.send_keys(Keys.END)
+                    time.sleep(wait_time) 
+                    continue
+
