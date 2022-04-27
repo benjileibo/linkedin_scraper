@@ -26,7 +26,6 @@ password = creds.loc[creds.key == 'password',"value"].values[0]
 gc = gspread.service_account(filename='/Users/benleibowitz/Downloads/trusty-sentinel-348204-ef2d96a570ec.json')
 sh = gc.open("Stealth Biotech Founders").sheet1
 last_row = int(next_available_row(sh))
-gsheet_profiles = sh.col_values(1)
 
 # Login to LinkedIn
 driver = webdriver.Chrome(ChromeDriverManager().install())
@@ -45,11 +44,13 @@ for keyword in keywords:
 
     expand_url = re.findall('https://(.*?)CLUSTER_EXPANSION', driver.page_source)[0] + "CLUSTER_EXPANSION"
     driver.get("http://" + expand_url)
-    html = driver.find_element_by_tag_name('html')
-    html.send_keys(Keys.END)
-    time.sleep(wait_time)  
 
     while True:
+
+        # Scroll to bottom
+        html = driver.find_element_by_tag_name('html')
+        html.send_keys(Keys.END)
+        time.sleep(wait_time)  
         
         # # Get only the unqiue profiles of interest
         html = driver.page_source
@@ -59,7 +60,9 @@ for keyword in keywords:
             if profiles.count(profile) < 2: 
                 profiles.remove(profile)
 
+        # Remove duplicate profiles
         profiles = list(set(profiles))
+        gsheet_profiles = sh.col_values(1)
         profiles = [profile for profile in profiles if profile not in gsheet_profiles]
         
         # Update google sheet with latest round of profiles
@@ -67,10 +70,20 @@ for keyword in keywords:
             sh.update(f'A{last_row}', profile)
             sh.update(f'B{last_row}', str(datetime.datetime.now()))
             last_row += 1
+            time.sleep(wait_time)
 
-        # Find next page button then click it
-        str_index = re.search('aria-label="Next" id="ember', driver.page_source).end()
-        ember = int(driver.page_source[str_index:str_index+3])
-        driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
-        time.sleep(wait_time)
+        
+        try:
+            # Scroll to bottom
+            html = driver.find_element_by_tag_name('html')
+            html.send_keys(Keys.END)
+            time.sleep(wait_time) 
+
+            # Find next page button then click it
+            str_index = re.search('aria-label="Next" id="ember', driver.page_source).end()
+            ember = int(driver.page_source[str_index:str_index+3])
+            driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
+            time.sleep(wait_time)
+        except:
+            breakpoint()
     
