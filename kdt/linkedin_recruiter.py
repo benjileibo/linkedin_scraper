@@ -1,6 +1,7 @@
 # pip3 install --user linkedin_scraper
 # pip install webdriver-manager
 
+from bs4 import BeautifulSoup as bs
 import gspread
 import datetime
 from faker import Faker
@@ -13,6 +14,9 @@ import pandas as pd
 import re
 import time 
 
+# Parameters
+spreadsheet_id = '1F4CZql8SwOAcyd334vnkiiJPsNygGQ8SZp8KsV09URY'
+
 # Get next available row
 def next_available_row(worksheet):
     str_list = list(filter(None, worksheet.col_values(1)))
@@ -24,15 +28,17 @@ email = creds.loc[creds.key == 'username',"value"].values[0]
 password = creds.loc[creds.key == 'password',"value"].values[0]
 
 gc = gspread.service_account(filename='/Users/benleibowitz/Downloads/trusty-sentinel-348204-ef2d96a570ec.json')
-sh = gc.open("Stealth Biotech Founders").sheet1
+sh = gc.open_by_key(spreadsheet_id).sheet1
 last_row = int(next_available_row(sh))
 
 # Login to LinkedIn
 driver = webdriver.Chrome(ChromeDriverManager().install())
+profile_driver = webdriver.Chrome(ChromeDriverManager().install())
 actions.login(driver, email, password)
+actions.login(profile_driver, email, password)
 
 # Search for keyword
-keywords = ["stealth biotech founder"]
+keywords = ["electronics engineer medical device"]
 wait_time = 2
 
 for keyword in keywords:
@@ -64,15 +70,59 @@ for keyword in keywords:
         profiles = list(set(profiles))
         gsheet_profiles = sh.col_values(1)
         profiles = [profile for profile in profiles if profile not in gsheet_profiles]
-        
-        # Update google sheet with latest round of profiles
+
+        # Update google sheet with latest round of profile data
         for profile in profiles:
-            sh.update(f'A{last_row}', profile)
-            sh.update(f'B{last_row}', str(datetime.datetime.now()))
+
+            profile_driver.get(profile)
+            soup = bs(profile_driver.page_source, 'lxml')
+
+            # Find name / location / title div
+            name_div = soup.find('div', {'class':'mt2 relative'})
+            
+            # Name
+            try:
+                name = name_div.find_all('h1')[0].get_text().strip()
+                first = name.split(' ')[0]
+                last = name.split(' ')[1]
+                sh.update(f'A{last_row}', first)
+                sh.update(f'B{last_row}', last)
+                sh.update(f'C{last_row}', name)
+            except: continue
+
+            # Profile
+            sh.update(f'D{last_row}', profile)
+
+            # Title
+            try:
+                title = name_div.find('div', {'class':'text-body-medium break-words'}).get_text().strip()
+                sh.update(f'E{last_row}', title)
+            except: continue
+
+            # Location
+            try:
+                location = name_div.find('span', {'class':'text-body-small inline t-black--light break-words'}).get_text().strip()
+                sh.update(f'F{last_row}', location)
+            except: continue
+
+            # Current company
+            try:
+                company = name_div.find('div', {'class':'inline-show-more-text inline-show-more-text--is-collapsed inline-show-more-text--is-collapsed-with-line-clamp inline'}).get_text().strip()
+                sh.update(f'G{last_row}', company)
+            except: continue
+
+            # About section
+            try:
+                about = soup.find('div', {'class':'inline-show-more-text inline-show-more-text--is-collapsed'}).find('span').get_text().strip()
+                sh.update(f'H{last_row}', about)
+            except: continue
+
+           # Date
+            sh.update(f'I{last_row}', str(datetime.datetime.now()))
+            
             last_row += 1
             time.sleep(wait_time)
 
-        
         try:
             # Scroll to bottom
             html = driver.find_element_by_tag_name('html')
@@ -84,6 +134,7 @@ for keyword in keywords:
             ember = int(driver.page_source[str_index:str_index+3])
             driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
             time.sleep(wait_time)
+
         except:
             # Scroll to bottom
             html = driver.find_element_by_tag_name('html')
@@ -102,6 +153,7 @@ for keyword in keywords:
                 driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
                 time.sleep(wait_time)
                 continue
+
             except:
                 try:
                     # Scroll to bottom
@@ -114,10 +166,10 @@ for keyword in keywords:
                     driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
                     time.sleep(wait_time)
                     continue
+
                 except:
                     # Scroll to bottom
                     html = driver.find_element_by_tag_name('html')
                     html.send_keys(Keys.END)
                     time.sleep(wait_time) 
                     continue
-
