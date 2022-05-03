@@ -68,12 +68,12 @@ for keyword in keywords:
 
         # Remove duplicate profiles
         profiles = list(set(profiles))
-        gsheet_profiles = sh.col_values(1)
+        gsheet_profiles = sh.col_values(4)
         profiles = [profile for profile in profiles if profile not in gsheet_profiles]
 
         # Update google sheet with latest round of profile data
         for profile in profiles:
-
+            last_row += 1
             profile_driver.get(profile)
             soup = bs(profile_driver.page_source, 'lxml')
 
@@ -88,7 +88,7 @@ for keyword in keywords:
                 sh.update(f'A{last_row}', first)
                 sh.update(f'B{last_row}', last)
                 sh.update(f'C{last_row}', name)
-            except: continue
+            except: pass
 
             # Profile
             sh.update(f'D{last_row}', profile)
@@ -97,30 +97,28 @@ for keyword in keywords:
             try:
                 title = name_div.find('div', {'class':'text-body-medium break-words'}).get_text().strip()
                 sh.update(f'E{last_row}', title)
-            except: continue
+            except: pass
 
             # Location
             try:
                 location = name_div.find('span', {'class':'text-body-small inline t-black--light break-words'}).get_text().strip()
                 sh.update(f'F{last_row}', location)
-            except: continue
+            except: pass
 
             # Current company
             try:
                 company = name_div.find('div', {'class':'inline-show-more-text inline-show-more-text--is-collapsed inline-show-more-text--is-collapsed-with-line-clamp inline'}).get_text().strip()
                 sh.update(f'G{last_row}', company)
-            except: continue
+            except: pass
 
             # About section
             try:
                 about = soup.find('div', {'class':'inline-show-more-text inline-show-more-text--is-collapsed'}).find('span').get_text().strip()
                 sh.update(f'H{last_row}', about)
-            except: continue
+            except: pass
 
            # Date
             sh.update(f'I{last_row}', str(datetime.datetime.now()))
-            
-            last_row += 1
             time.sleep(wait_time)
 
         try:
@@ -152,7 +150,7 @@ for keyword in keywords:
                 ember = int(driver.page_source[str_index:str_index+3])
                 driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
                 time.sleep(wait_time)
-                continue
+                pass
 
             except:
                 try:
@@ -165,11 +163,11 @@ for keyword in keywords:
                     ember = int(driver.page_source[str_index:str_index+4])
                     driver.find_elements_by_xpath(f'//*[@id="ember{ember}"]')[0].click()
                     time.sleep(wait_time)
-                    continue
+                    pass
 
                 except:
                     # Scroll to bottom
                     html = driver.find_element_by_tag_name('html')
                     html.send_keys(Keys.END)
                     time.sleep(wait_time) 
-                    continue
+                    pass
