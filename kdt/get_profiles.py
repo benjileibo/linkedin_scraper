@@ -13,9 +13,6 @@ import pandas as pd
 import re
 import time 
 
-# Parameters
-spreadsheet_id = '1F4CZql8SwOAcyd334vnkiiJPsNygGQ8SZp8KsV09URY'
-
 # Get next available row
 def next_available_row(worksheet):
     str_list = list(filter(None, worksheet.col_values(1)))
@@ -27,7 +24,7 @@ email = creds.loc[creds.key == 'username',"value"].values[0]
 password = creds.loc[creds.key == 'password',"value"].values[0]
 
 gc = gspread.service_account(filename='/Users/benleibowitz/Downloads/trusty-sentinel-348204-ef2d96a570ec.json')
-sh = gc.open_by_key(spreadsheet_id).sheet1
+sh = gc.open("Stealth Biotech Founders").sheet1
 last_row = int(next_available_row(sh))
 
 # Login to LinkedIn

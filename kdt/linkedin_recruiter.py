@@ -15,12 +15,13 @@ import re
 import time 
 
 # Parameters
-spreadsheet_id = '1F4CZql8SwOAcyd334vnkiiJPsNygGQ8SZp8KsV09URY'
+spreadsheet_id = '1JoTlVppneyMvHXTnEMpWswPFifeuCXSlzxhbGVezdxQ'
+worksheet_id = 915809190
 
 # Get next available row
 def next_available_row(worksheet):
     str_list = list(filter(None, worksheet.col_values(1)))
-    return str(len(str_list)+1)
+    return str(len(str_list))
 
 # Pull linkedin credentials
 creds = pd.read_csv('../creds.csv')
@@ -28,7 +29,7 @@ email = creds.loc[creds.key == 'username',"value"].values[0]
 password = creds.loc[creds.key == 'password',"value"].values[0]
 
 gc = gspread.service_account(filename='/Users/benleibowitz/Downloads/trusty-sentinel-348204-ef2d96a570ec.json')
-sh = gc.open_by_key(spreadsheet_id).sheet1
+sh = gc.open_by_key(spreadsheet_id).get_worksheet_by_id(worksheet_id)
 last_row = int(next_available_row(sh))
 
 # Login to LinkedIn
@@ -38,8 +39,8 @@ actions.login(driver, email, password)
 actions.login(profile_driver, email, password)
 
 # Search for keyword
-keywords = ["electronics engineer medical device"]
-wait_time = 2
+keywords = ["stealth biotech founder"]
+wait_time = 5
 
 for keyword in keywords:
     
@@ -89,6 +90,7 @@ for keyword in keywords:
                 sh.update(f'B{last_row}', last)
                 sh.update(f'C{last_row}', name)
             except: pass
+            time.sleep(wait_time)
 
             # Profile
             sh.update(f'D{last_row}', profile)
@@ -98,24 +100,28 @@ for keyword in keywords:
                 title = name_div.find('div', {'class':'text-body-medium break-words'}).get_text().strip()
                 sh.update(f'E{last_row}', title)
             except: pass
+            time.sleep(wait_time)
 
             # Location
             try:
                 location = name_div.find('span', {'class':'text-body-small inline t-black--light break-words'}).get_text().strip()
                 sh.update(f'F{last_row}', location)
             except: pass
+            time.sleep(wait_time)
 
             # Current company
             try:
                 company = name_div.find('div', {'class':'inline-show-more-text inline-show-more-text--is-collapsed inline-show-more-text--is-collapsed-with-line-clamp inline'}).get_text().strip()
                 sh.update(f'G{last_row}', company)
             except: pass
+            time.sleep(wait_time)
 
             # About section
             try:
                 about = soup.find('div', {'class':'inline-show-more-text inline-show-more-text--is-collapsed'}).find('span').get_text().strip()
                 sh.update(f'H{last_row}', about)
             except: pass
+            time.sleep(wait_time)
 
            # Date
             sh.update(f'I{last_row}', str(datetime.datetime.now()))
